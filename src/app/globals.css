@@ -1,0 +1,602 @@
+/*
+ * 深色優先的視覺語言，配色邏輯跟 Focus4AI 一致：
+ * 暖黑背景、萊姆綠強調色、卡片用兩層 surface 分層。
+ * 固定深色，不跟著系統色彩偏好切換（Focus4AI 本身也是這樣）——
+ * 這就是這個產品的樣子，不是「深色模式」這個選項。
+ */
+:root {
+  --bg: #1b1919;
+  --surface: #232120;
+  --surface-2: #2b2927;
+  --border: #3b3833;
+  --fg: #eceae5;
+  --muted: #b0b2aa;
+  --accent: #c6ff4d;
+  --accent-contrast: #161c04;
+  --ok: #7fb069;
+  --warn: #e0a458;
+  --error: #f0968e;
+  --error-strong: #d64545;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --radius: 10px;
+  --radius-lg: 14px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 0.6rem 1.1rem;
+  border-radius: 0 0 8px 0;
+  font-weight: 600;
+  z-index: 100;
+}
+
+.skip-link:focus {
+  left: 0;
+  top: 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* ── 頁首 ───────────────────────────────────────────── */
+
+header.site {
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 1.25rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+}
+
+header.site .inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+header.site h1 {
+  margin: 0 0 0.3rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+header.site p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.main-nav {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.main-nav ul {
+  list-style: none;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0;
+  margin: 0;
+}
+
+.main-nav a {
+  display: inline-block;
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.92rem;
+}
+
+.main-nav a:hover {
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.logout-button {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  margin-top: 0;
+  padding: 0.4rem 0.9rem;
+  font-weight: 600;
+  border-radius: 999px;
+  font-size: 0.88rem;
+}
+
+.logout-button:hover {
+  color: var(--fg);
+  border-color: var(--accent);
+}
+
+/* ── 版面 ───────────────────────────────────────────── */
+
+.layout {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 4rem;
+}
+
+footer.site {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+footer.site p {
+  max-width: 960px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── 卡片 ───────────────────────────────────────────── */
+
+.card {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 1.4rem;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* ── 表單 ───────────────────────────────────────────── */
+
+form label {
+  display: block;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.92rem;
+}
+
+form label:first-of-type {
+  margin-top: 0;
+}
+
+textarea,
+input[type='text'],
+input[type='password'],
+input[type='number'],
+input[type='file'],
+select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+input[type='file'] {
+  padding: 0.5rem 0.6rem;
+}
+
+input[type='file']::file-selector-button {
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  margin-right: 0.75rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+input[type='file']::file-selector-button:hover {
+  border-color: var(--accent);
+}
+
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2rem;
+}
+
+textarea:focus,
+input:focus,
+select:focus,
+button:focus,
+a:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.field-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.field-row > div {
+  flex: 1;
+  min-width: 160px;
+}
+
+.field-row label,
+form .checkbox-label {
+  margin-top: 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+  font-weight: 400;
+  font-size: 0.92rem;
+}
+
+.checkbox-label input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+/* ── 按鈕 ───────────────────────────────────────────── */
+
+button {
+  margin-top: 0.9rem;
+  padding: 0.65rem 1.3rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
+
+button.danger {
+  background: transparent;
+  color: var(--error);
+  border-color: var(--error);
+}
+
+button.danger:hover {
+  background: var(--error);
+  color: var(--bg);
+}
+
+/* ── 文字輔助樣式 ───────────────────────────────────── */
+
+.hint {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.warning {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* ── 問答結果 ───────────────────────────────────────── */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.answer-card {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+.answer-text {
+  white-space: pre-wrap;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.citations {
+  padding-left: 0;
+  margin: 0.75rem 0 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.citations li {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--border);
+  font-family: var(--mono);
+}
+
+.candidates {
+  list-style: none;
+  padding: 0;
+  margin: 0.75rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.candidates li {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  background: var(--surface-2);
+}
+
+.candidate-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.92rem;
+}
+
+.score {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-family: var(--mono);
+}
+
+.candidate-text {
+  white-space: pre-wrap;
+  margin: 0;
+  color: var(--fg);
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+/* ── 徽章 ───────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.12rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.badge.lock {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 14%, var(--surface-2));
+}
+
+.badge.ok {
+  color: var(--ok);
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface-2));
+}
+
+/* ── 上傳結果清單 ───────────────────────────────────── */
+
+.upload-results {
+  margin-top: 1rem;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.upload-results li {
+  font-size: 0.88rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.upload-results li.error {
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, var(--surface-2));
+}
+
+/* ── 表格 ───────────────────────────────────────────── */
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.docs-table th,
+.docs-table td {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.docs-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.docs-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.docs-table button {
+  margin-top: 0;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.4rem;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 0.85em;
+}
+
+/* ── 部署教學頁 ─────────────────────────────────────── */
+
+.setup .step h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.step-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.9rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.step-body p {
+  margin: 0.6rem 0;
+  line-height: 1.75;
+}
+
+.step-body ul,
+.step-body ol {
+  margin: 0.6rem 0;
+  padding-left: 1.4rem;
+  line-height: 1.8;
+}
+
+.step-body li {
+  margin: 0.2rem 0;
+}
+
+.step-body pre {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  margin: 0.7rem 0;
+}
+
+.step-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.step-figure {
+  margin: 1rem 0 0;
+}
+
+.step-figure img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.step-figure figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.setup-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+}
