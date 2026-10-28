@@ -12,7 +12,7 @@ CREATE TABLE chunks (
   id          TEXT PRIMARY KEY,
   doc_id      TEXT        NOT NULL,
   text        TEXT        NOT NULL,
-  embedding   vector(256) NOT NULL,
+  embedding   vector(1024) NOT NULL,
   source      TEXT        NOT NULL,
   section     TEXT        NOT NULL DEFAULT '',
   chunk_index INTEGER     NOT NULL DEFAULT 0,
