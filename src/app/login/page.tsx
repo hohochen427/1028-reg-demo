@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +19,7 @@ function LoginForm() {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -37,15 +38,26 @@ function LoginForm() {
     <section aria-labelledby="login-heading" className="card" style={{ maxWidth: 360 }}>
       <h2 id="login-heading">登入</h2>
       <form onSubmit={handleSubmit}>
-        <label htmlFor="password">網站密碼</label>
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="username"
+          autoFocus
+          required
+        />
+        <label htmlFor="password">密碼</label>
         <input
           id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoFocus
+          autoComplete="current-password"
+          required
         />
-        <button type="submit" disabled={loading || !password}>
+        <button type="submit" disabled={loading || !email || !password}>
           {loading ? '登入中…' : '登入'}
         </button>
       </form>

@@ -2,14 +2,18 @@ import type { Metadata } from 'next';
 import './globals.css';
 import NavActions from './nav-actions';
 import { authRequired } from '@/lib/auth';
+import { getSessionUserFromCookies } from '@/lib/session';
 
 export const metadata: Metadata = {
   title: 'RAG-demo｜知識庫問答 MVP',
   description: '最小可行版本的 RAG 問答網站：問一個問題，看見檢索到的段落與帶引用的回答。',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const showLogout = authRequired();
+  const user = await getSessionUserFromCookies();
+  // 只有管理員看得到後台與設定入口（middleware 與 API 也都會擋，這裡只是不顯示按了也進不去的連結）
+  const isAdmin = user?.role === 'admin';
   return (
     <html lang="zh-Hant">
       <body>
@@ -25,12 +29,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <li>
                   <a href="/">問答</a>
                 </li>
-                <li>
-                  <a href="/admin">後台管理</a>
-                </li>
-                <li>
-                  <a href="/settings">設定</a>
-                </li>
+                {isAdmin && (
+                  <li>
+                    <a href="/admin">後台管理</a>
+                  </li>
+                )}
+                {isAdmin && (
+                  <li>
+                    <a href="/settings">設定</a>
+                  </li>
+                )}
                 <li>
                   <a href="/setup">部署教學</a>
                 </li>

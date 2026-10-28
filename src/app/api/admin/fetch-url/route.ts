@@ -4,6 +4,8 @@ import { slugifyDocId } from '@/lib/parseUpload';
 import { prepareDocument, DEFAULT_CHUNK_OPTIONS } from '@/lib/chunk';
 import { embedDocuments } from '@/lib/embedding';
 import { getStore } from '@/lib/store';
+import { normalizeGroups } from '@/lib/access';
+import { requireAdmin } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +16,9 @@ function clampInt(value: unknown, fallback: number, min: number, max: number): n
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -31,6 +36,7 @@ export async function POST(req: NextRequest) {
     keepHeading: (body as Record<string, unknown>).keepHeading !== false,
   };
   const visibility = (body as Record<string, unknown>).visibility === 'local_only' ? 'local_only' : 'public';
+  const allowedGroups = normalizeGroups((body as Record<string, unknown>).allowedGroups);
 
   let html: string;
   try {
@@ -71,6 +77,7 @@ export async function POST(req: NextRequest) {
       section: piece.section,
       chunkIndex: piece.chunkIndex,
       visibility,
+      allowedGroups,
     })),
   );
 
