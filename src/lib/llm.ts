@@ -53,7 +53,6 @@ async function callClaude(apiKey: string, model: string, systemPrompt: string, u
     body: JSON.stringify({
       model: model || 'claude-sonnet-5-5',
       max_tokens: 1024,
-      temperature: 0,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     }),
