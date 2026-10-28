@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ask } from '@/lib/pipeline';
+import { getSessionUser } from '@/lib/session';
 
 export async function POST(req: NextRequest) {
+  const user = await getSessionUser(req);
+  if (!user) return NextResponse.json({ error: '尚未登入' }, { status: 401 });
+
   let body: unknown;
   try {
     body = await req.json();
@@ -16,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await ask(question);
+    const result = await ask(question, user);
     return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json(

@@ -18,6 +18,8 @@ CREATE TABLE chunks (
   chunk_index INTEGER     NOT NULL DEFAULT 0,
   -- local_only：絕不送到外部 LLM（除非在 /settings 明確打開開關）
   visibility  TEXT        NOT NULL DEFAULT 'public',
+  -- 可見群組：空陣列代表所有登入者都看得到；admin 永遠看得到。權限在檢索的 SQL WHERE 裡過濾
+  allowed_groups TEXT[]   NOT NULL DEFAULT '{}',
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -29,4 +31,17 @@ CREATE TABLE IF NOT EXISTS settings (
   id         TEXT PRIMARY KEY,
   data       JSONB       NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 使用者帳號（密碼用 crypto.scrypt 加鹽雜湊，不存明文）。
+-- 用 IF NOT EXISTS，所以重跑這個檔案不會清掉使用者。
+-- 既有資料庫請改執行 db/migrate-users.sql，不要重跑本檔（本檔開頭會 DROP chunks）。
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT PRIMARY KEY,
+  email         TEXT        NOT NULL UNIQUE,
+  name          TEXT        NOT NULL,
+  password_hash TEXT        NOT NULL,
+  role          TEXT        NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+  groups        TEXT[]      NOT NULL DEFAULT '{}',
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );

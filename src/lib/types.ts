@@ -1,5 +1,33 @@
 export type Visibility = 'public' | 'local_only';
 
+export type Role = 'admin' | 'member';
+
+/** 登入後 session 裡帶的使用者資訊（只放檢索與授權需要的欄位） */
+export interface SessionUser {
+  id: string;
+  role: Role;
+  groups: string[];
+}
+
+/** 檢索層用來過濾 Chunk 的身分：只需要 groups 與 role */
+export interface Viewer {
+  groups: string[];
+  role: Role;
+}
+
+/** users 資料表的一列（含密碼雜湊，只能在伺服器端使用，絕不回傳給前端） */
+export interface UserRecord {
+  id: string;
+  email: string;
+  name: string;
+  passwordHash: string;
+  role: Role;
+  groups: string[];
+}
+
+/** 可以安全回傳給前端的使用者資料（沒有密碼雜湊） */
+export type PublicUser = Omit<UserRecord, 'passwordHash'>;
+
 /** 一塊 Chunk：Vector ＋ 正文 ＋ 最小夠用的 Metadata */
 export interface StoredChunk {
   id: string;
@@ -11,6 +39,8 @@ export interface StoredChunk {
   chunkIndex: number;
   /** local_only：絕不送到外部 LLM（除非在設定頁明確打開開關），資料外洩的是原文，比 embedding 外洩的向量嚴重 */
   visibility: Visibility;
+  /** 可見群組；空陣列代表所有登入者都看得到，admin 永遠看得到 */
+  allowedGroups: string[];
 }
 
 /** 檢索結果：多一個分數 */

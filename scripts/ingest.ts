@@ -47,6 +47,8 @@ async function main() {
         section: piece.section,
         chunkIndex: piece.chunkIndex,
         visibility: 'public' as const,
+        // 範例文件所有登入者都看得到
+        allowedGroups: [] as string[],
       })),
     );
 

@@ -3,6 +3,8 @@ import { parseUpload, slugifyDocId } from '@/lib/parseUpload';
 import { prepareDocument, DEFAULT_CHUNK_OPTIONS } from '@/lib/chunk';
 import { embedDocuments } from '@/lib/embedding';
 import { getStore } from '@/lib/store';
+import { normalizeGroups } from '@/lib/access';
+import { requireAdmin } from '@/lib/session';
 
 export const runtime = 'nodejs';
 
@@ -13,6 +15,9 @@ function clampInt(value: unknown, fallback: number, min: number, max: number): n
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   let form: FormData;
   try {
     form = await req.formData();
@@ -31,6 +36,8 @@ export async function POST(req: NextRequest) {
     keepHeading: form.get('keepHeading') !== 'false',
   };
   const visibility = form.get('visibility') === 'local_only' ? 'local_only' : 'public';
+  // 可見群組：空白＝所有登入者都看得到
+  const allowedGroups = normalizeGroups(form.get('allowedGroups'));
 
   const store = getStore();
   const results: Array<{ fileName: string; docId: string; chunkCount: number; error?: string }> = [];
@@ -62,6 +69,7 @@ export async function POST(req: NextRequest) {
           section: piece.section,
           chunkIndex: piece.chunkIndex,
           visibility,
+          allowedGroups,
         })),
       );
 

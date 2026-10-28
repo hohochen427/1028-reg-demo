@@ -1,4 +1,4 @@
-import type { AskResult, ScoredChunk } from './types';
+import type { AskResult, ScoredChunk, SessionUser, Viewer } from './types';
 import { embedQuery } from './embedding';
 import { getStore } from './store';
 import { generateAnswer, extractCitations, effectiveProvider, isExternalProvider } from './llm';
@@ -9,15 +9,17 @@ import { embeddingProvider, storeKind, topK } from './config';
  * 這是整個專案唯一的「主線」，之後要加 Hybrid Search、Rerank、Query Rewrite，
  * 都是在這個函式裡多插一步，而不是另開一條路。
  */
-export async function ask(question: string): Promise<AskResult> {
+export async function ask(question: string, user: SessionUser): Promise<AskResult> {
   const start = Date.now();
   const store = getStore();
   const settings = await store.getSettings();
 
   const vector = await embedQuery(question);
-  const vectorHits = await store.vectorSearch(vector, topK());
+  // 權限在檢索層擋：把目前登入者的 groups 與 role 傳給兩條檢索，看不到的 Chunk 根本不會被撈出來
+  const viewer: Viewer = { groups: user.groups, role: user.role };
+  const vectorHits = await store.vectorSearch(vector, topK(), viewer);
   const terms = extractKeywords(question);
-  const keywordHits = terms.length > 0 ? await store.keywordSearch(terms, topK()) : [];
+  const keywordHits = terms.length > 0 ? await store.keywordSearch(terms, topK(), viewer) : [];
   const candidates = mergeKeywordFirst(keywordHits, vectorHits, topK());
 
   // local_only 的資料絕不送到外部 LLM，除非在 /settings 明確打開開關

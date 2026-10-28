@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStore } from '@/lib/store';
+import { requireAdmin } from '@/lib/session';
 import type { LlmProviderKind } from '@/lib/types';
 
 function maskKey(key: string): string {
@@ -8,7 +9,10 @@ function maskKey(key: string): string {
   return `••••${key.slice(-4)}`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   const store = getStore();
   const settings = await store.getSettings();
   return NextResponse.json({
@@ -24,6 +28,9 @@ export async function GET() {
 const VALID_PROVIDERS: LlmProviderKind[] = ['none', 'claude', 'gemini', 'openai_compatible'];
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if ('response' in auth) return auth.response;
+
   let body: Record<string, unknown>;
   try {
     body = (await req.json()) as Record<string, unknown>;
