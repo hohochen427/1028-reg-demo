@@ -12,6 +12,7 @@ export interface Store {
   count(): Promise<number>;
   list(limit: number, offset: number): Promise<Omit<StoredChunk, 'embedding'>[]>;
   vectorSearch(vector: number[], k: number): Promise<ScoredChunk[]>;
+  keywordSearch(terms: string[], k: number): Promise<ScoredChunk[]>;
   deleteByDocId(docId: string): Promise<void>;
   getSettings(): Promise<RuntimeSettings>;
   setSettings(settings: RuntimeSettings): Promise<void>;
@@ -100,6 +101,23 @@ class FileStore implements Store {
     const all = await this.load();
     return all
       .map((c) => ({ ...strip(c), score: cosineSimilarity(vector, c.embedding) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, k);
+  }
+
+  async keywordSearch(terms: string[], k: number): Promise<ScoredChunk[]> {
+    const needles = terms.map((t) => t.toLowerCase()).filter((t) => t.length > 0);
+    if (needles.length === 0) return [];
+    const all = await this.load();
+    return all
+      .map((c) => {
+        const section = c.section.toLowerCase();
+        const text = c.text.toLowerCase();
+        // 一筆一筆比對 section 和 text，命中幾個關鍵字就得幾分
+        const score = needles.filter((n) => section.includes(n) || text.includes(n)).length;
+        return { ...strip(c), score };
+      })
+      .filter((c) => c.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, k);
   }
@@ -231,6 +249,23 @@ class PgStore implements Store {
         ORDER BY embedding <=> $1::vector
         LIMIT $2`,
       [JSON.stringify(vector), k],
+    );
+    return res.rows.map((r: PgRow) => rowToScored(r));
+  }
+
+  async keywordSearch(terms: string[], k: number): Promise<ScoredChunk[]> {
+    const patterns = terms
+      .filter((t) => t.length > 0)
+      // 跳脫 LIKE 的萬用字元，讓關鍵字只做字面比對
+      .map((t) => `%${t.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`);
+    if (patterns.length === 0) return [];
+    const pool = await this.pool();
+    const res = await pool.query(
+      `SELECT *, 1 AS score
+         FROM chunks
+        WHERE text ILIKE ANY($1::text[]) OR section ILIKE ANY($1::text[])
+        LIMIT $2`,
+      [patterns, k],
     );
     return res.rows.map((r: PgRow) => rowToScored(r));
   }

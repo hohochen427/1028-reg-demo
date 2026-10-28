@@ -15,7 +15,10 @@ export async function ask(question: string): Promise<AskResult> {
   const settings = await store.getSettings();
 
   const vector = await embedQuery(question);
-  const candidates = await store.vectorSearch(vector, topK());
+  const vectorHits = await store.vectorSearch(vector, topK());
+  const terms = extractKeywords(question);
+  const keywordHits = terms.length > 0 ? await store.keywordSearch(terms, topK()) : [];
+  const candidates = mergeKeywordFirst(keywordHits, vectorHits, topK());
 
   // local_only 的資料絕不送到外部 LLM，除非在 /settings 明確打開開關
   const provider = effectiveProvider(settings);
@@ -40,4 +43,35 @@ export async function ask(question: string): Promise<AskResult> {
     warning,
     withheldCount,
   };
+}
+
+/**
+ * 從問題裡抓出「向量搜尋容易漏掉」的精確字串：
+ * 1. 像 ERR-PAY-202 這種英數加連字號的代碼（至少要有一個英文字母）
+ * 2. 三位數以上的數字
+ * 去重後回傳；沒抓到就回傳空陣列，呼叫端就不會做關鍵字搜尋。
+ */
+export function extractKeywords(question: string): string[] {
+  const codes = question.match(/\b(?=[A-Za-z0-9-]*[A-Za-z])[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+\b/g) ?? [];
+  const numbers = question.match(/\d{3,}/g) ?? [];
+  return Array.from(new Set([...codes, ...numbers]));
+}
+
+/**
+ * 關鍵字命中的放最前面，再用向量結果補滿；重複的 id 只留一份，最多 k 筆。
+ */
+export function mergeKeywordFirst(
+  keywordHits: ScoredChunk[],
+  vectorHits: ScoredChunk[],
+  k: number,
+): ScoredChunk[] {
+  const seen = new Set<string>();
+  const merged: ScoredChunk[] = [];
+  for (const chunk of [...keywordHits, ...vectorHits]) {
+    if (seen.has(chunk.id)) continue;
+    seen.add(chunk.id);
+    merged.push(chunk);
+    if (merged.length >= k) break;
+  }
+  return merged;
 }
